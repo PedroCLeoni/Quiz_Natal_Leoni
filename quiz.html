@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz da Leoni</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background: url('IMAGENS/WALLPAPER_INICIO.png') no-repeat center center fixed;
+            background-size: cover;
+        }
+
+        .login-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .login-box {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+            width: 350px;
+        }
+
+        .login-box h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .login-box input {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+        }
+
+        .login-box button {
+            margin-top: 10px;
+            padding: 12px 25px;
+            font-size: 18px;
+            background-color: #388e3c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .login-box button:hover {
+            background-color: #2e7d32;
+        }
+
+        .admin-btn {
+            background-color: #d32f2f;
+            margin-top: 10px;
+        }
+
+        .admin-btn:hover {
+            background-color: #b71c1c;
+        }
+
+        .error {
+            color: #d32f2f;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        #tabela-container {
+            margin-top: 15px;
+            display: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        .start-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .start-screen .warning {
+            font-size: 24px;
+            font-weight: bold;
+            background-color: #ffffff;
+            color: #000;
+            padding: 20px 30px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+            border: 4px solid #d32f2f;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .start-screen button {
+            margin-top: 10px;
+            padding: 18px 45px;
+            font-size: 26px;
+            background-color: #ffcc00;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            border-radius: 10px;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
+        }
+
+        .start-screen button:hover {
+            background-color: #ff9900;
+            transform: scale(1.05);
+        }
+
+        #quiz-container {
+            background-color: white;
+            width: 80%;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: none;
+        }
+
+        .question {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .options button {
+            margin: 10px;
+            padding: 12px 25px;
+            font-size: 18px;
+            background-color: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .options button:hover {
+            background-color: #1565c0;
+        }
+
+        .timer {
+            font-size: 26px;
+            color: #d32f2f;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        #next-btn {
+            margin-top: 20px;
+            padding: 12px 25px;
+            font-size: 18px;
+            background-color: #388e3c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        #next-btn:hover {
+            background-color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Login -->
+    <div id="login-screen" class="login-screen">
+        <div class="login-box">
+            <h2>Login para o Quiz</h2>
+            <input type="text" id="nome" placeholder="Nome Completo">
+            <input type="number" id="numero" placeholder="Nº de Funcionário">
+            <button onclick="validarLogin()">Entrar</button>
+            <div id="error-msg" class="error"></div>
+            <hr>
+            <button class="admin-btn" onclick="mostrarRanking()">Ver Ranking</button>
+            <button class="admin-btn" onclick="resetarNumeros()">Reset Ranking</button>
+            <p style="font-size:14px;color:#555;">(Somente administrador pode resetar)</p>
+            <div id="counter"></div>
+            <div id="tabela-container"></div>
+        </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="start-screen">
+        <div class="warning">
+           <strong>Atenção:</strong> Cada pergunta tem <span style="color:#d32f2f;">20 segundos</span> para responder!
+        </div>
+        <button onclick="startQuiz()">Iniciar Quiz</button>
+    </div>
+
+    <!-- Quiz -->
+    <div id="quiz-container">
+        <div id="timer" class="timer"></div>
+        <div id="question-area"></div>
+        <button id="next-btn" onclick="nextQuestion()">Próxima</button>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js"></script>
+
+    <script>
+    // --------------------------
+    // 🔥 CONFIGURAÇÃO FIREBASE
+    // --------------------------
+    const firebaseConfig = {
+        apiKey: "AIzaSyDdS_UreonF1FxjkwLabA4VZKu_wCDBJKM",
+        authDomain: "quiz-da-leoni.firebaseapp.com",
+        projectId: "quiz-da-leoni",
+        storageBucket: "quiz-da-leoni.firebasestorage.app",
+        messagingSenderId: "473522586002",
+        appId: "1:473522586002:web:a90c1353ba39a2fdcf814b",
+        measurementId: "G-LJQNFB9NS3"
+    };
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // --------------------------
+    // 🔢 VARIÁVEIS DO QUIZ
+    // --------------------------
+
+    let current = 0, score = 0, time = 20, timerInterval;
+    let jogador = null;
+
+    const questions = [
+        { q: "Qual é a principal atividade da Leonische Portugal?", options: ["Produção de pneus para automóveis", "Fabricação de equipamento elétrico e eletrónico para veículos a motor", "Montagem de motores industriais"], answer: 1 },
+        { q: "Quantos litros de sangue tem, em média, um adulto?", options: ["3-4 litros", "4-6 litros", "7-10 litros"], answer: 1 },
+        { q: "Quem pintou a Mona Lisa?", options: ["Van Gogh", "Leonardo da Vinci", "Picasso"], answer: 1 },
+        { q: "Qual é o maior planeta do Sistema Solar?", options: ["Urano", "Júpiter", "Saturno"], answer: 1 },
+        { q: "Se um elétrico elétrico vai de Lisboa para Porto e o vento sopra para sul, para onde vai o fumo?", options: ["Nenhum lado", "Para onde o vento o levar", "Para a Atmosfera"], answer: 0 },
+        { q: "Se um galo põe um ovo no telhado da casa, para que lado o ovo rola?", options: ["Depende do vento", "Nenhum", "Depende do telhado"], answer: 1 },
+        { q: "Quantos meses têm 28 dias?", options: ["1", "12", "Nenhum"], answer: 1 },
+        { q: "O que acontece quando dois cabos se apaixonam?", options: ["Viram extensão elétrica", "Ficam enrolados", "Ligam-se para sempre"], answer: 2 },
+        { q: "Em que ano foi fundada a Leonische Portugal?", options: ["1991", "1993", "1997"], answer: 0 },
+        { q: "Qual o elemento químico mais abundante na atmosfera terrestre?", options: ["Azoto", "Oxigénio", "Dióxido de Carbono"], answer: 0 },
+        { q: "Qual é o NIF da Leonische Portugal?", options: ["509876543", "502552832", "501234567"], answer: 1 }
+    ];
+
+    // --------------------------
+    // 🔥 FUNÇÕES FIRESTORE
+    // --------------------------
+
+    // Verifica se o número de funcionário já existe
+    async function funcionarioExiste(numero) {
+        const snap = await db.collection("funcionarios").doc(numero).get();
+        return snap.exists;
+    }
+
+    // Registra o funcionário
+    async function registrarFuncionario(nome, numero) {
+        await db.collection("funcionarios").doc(numero).set({
+            nome: nome,
+            numero: numero
+        });
+    }
+
+    // Salva pontuação no ranking global
+    async function salvarRanking(nome, score) {
+        await db.collection("ranking").add({
+            nome: nome,
+            score: score,
+            timestamp: Date.now()
+        });
+    }
+
+    // Lê ranking
+    async function obterRanking() {
+        const snap = await db.collection("ranking")
+            .orderBy("score", "desc")
+            .orderBy("timestamp", "asc")
+            .get();
+
+        return snap.docs.map(doc => doc.data());
+    }
+
+    // Reseta tabelas
+    async function resetarFirestore() {
+        const funcionarios = await db.collection("funcionarios").get();
+        funcionarios.forEach(doc => doc.ref.delete());
+
+        const ranking = await db.collection("ranking").get();
+        ranking.forEach(doc => doc.ref.delete());
+    }
+
+    // --------------------------
+    // 🟩 FUNÇÕES DO SISTEMA
+    // --------------------------
+
+    async function validarLogin() {
+        const nome = document.getElementById('nome').value.trim();
+        const numero = document.getElementById('numero').value.trim();
+        const errorMsg = document.getElementById('error-msg');
+
+        if (!nome || !numero) {
+            errorMsg.textContent = "Preencha todos os campos!";
+            return;
+        }
+
+        if (!/^\d+$/.test(numero)) {
+            errorMsg.textContent = "O Nº de Funcionário deve conter apenas números!";
+            return;
+        }
+
+        // Verificar duplicado global
+        if (await funcionarioExiste(numero)) {
+            errorMsg.textContent = "Este Nº de Funcionário já foi usado!";
+            return;
+        }
+
+        // Registrar jogador globalmente
+        await registrarFuncionario(nome, numero);
+        jogador = { nome, numero };
+
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'flex';
+    }
+
+    // Mostrar ranking
+    async function mostrarRanking() {
+        const container = document.getElementById('tabela-container');
+        const ranking = await obterRanking();
+
+        if (ranking.length === 0) {
+            container.innerHTML = "<p>Nenhum ranking disponível ainda.</p>";
+            container.style.display = "block";
+            return;
+        }
+
+        let tabela = "<h3>Ranking</h3><table><tr><th>Posição</th><th>Nome</th><th>Pontuação</th></tr>";
+        ranking.forEach((r, i) => {
+            tabela += `<tr><td>${i + 1}</td><td>${r.nome}</td><td>${r.score}</td></tr>`;
+        });
+        tabela += "</table>";
+
+        container.innerHTML = tabela;
+        container.style.display = "block";
+    }
+
+    // Reset global
+    async function resetarNumeros() {
+        const senha = prompt("Senha de administrador:");
+        if (senha !== "admin123.") {
+            alert("Senha incorreta! Ação não permitida.");
+            return;
+        }
+
+        await resetarFirestore();
+        alert("Ranking e funcionários limpos!");
+        document.getElementById('tabela-container').innerHTML = "";
+    }
+
+    // --------------------------
+    // 🟦 QUIZ
+    // --------------------------
+
+    function startQuiz() {
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('quiz-container').style.display = 'block';
+        showQuestion();
+    }
+
+    function startTimer() {
+        time = 20;
+        document.getElementById('timer').innerText = `Tempo: ${time}s`;
+        timerInterval = setInterval(() => {
+            time--;
+            document.getElementById('timer').innerText = `Tempo: ${time}s`;
+            if (time <= 0) nextQuestion();
+        }, 1000);
+    }
+
+    function showQuestion() {
+        clearInterval(timerInterval);
+        if (current >= questions.length) return showScore();
+
+        const q = questions[current];
+
+        let shuffledOptions = q.options.map((opt, i) => ({ text: opt, isCorrect: i === q.answer }));
+        shuffledOptions.sort(() => Math.random() - 0.5);
+
+        document.getElementById('question-area').innerHTML = `
+            <div class="question">${q.q}</div>
+            <div class="options">
+                ${shuffledOptions.map(opt => `<button onclick="checkAnswer(${opt.isCorrect})">${opt.text}</button>`).join('')}
+            </div>
+        `;
+
+        startTimer();
+    }
+
+    function checkAnswer(isCorrect) {
+        if (isCorrect) score += 159 + time;
+        nextQuestion();
+    }
+
+    function nextQuestion() {
+        current++;
+        showQuestion();
+    }
+
+    async function showScore() {
+        clearInterval(timerInterval);
+
+        await salvarRanking(jogador.nome, score);
+
+        const ranking = await obterRanking();
+
+        let rankingHTML = "<h3>Ranking:</h3><table><tr><th>Posição</th><th>Nome</th><th>Pontuação</th></tr>";
+        ranking.forEach((r, i) => {
+            rankingHTML += `<tr><td>${i + 1}</td><td>${r.nome}</td><td>${r.score}</td></tr>`;
+        });
+        rankingHTML += "</table>";
+
+        document.getElementById('question-area').innerHTML = `
+            <h2>Fim do Quiz!</h2>
+            <p>A tua pontuação: <strong>${score}</strong></p>
+            ${rankingHTML}
+        `;
+
+        document.getElementById('timer').style.display = "none";
+        document.getElementById('next-btn').style.display = "none";
+    }
+    </script>
+
+</body>
+</html>
