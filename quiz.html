@@ -9,7 +9,7 @@
             text-align: center;
             margin: 0;
             padding: 0;
-            background: url('IMAGENS/WALLPAPER_INICIO.png') no-repeat center center fixed;
+            background: url('WALLPAPER_INICIO.png') no-repeat center center fixed;
             background-size: cover;
         }
 
@@ -191,6 +191,17 @@
     </style>
 </head>
 <body>
+    
+    <!-- Botão só visível para admins -->
+    <button id="btn-admin" hidden>Painel Admin</button>
+    
+
+    <!-- Painel (simples) -->
+    <div id="admin-panel" hidden>
+    <h3>Painel Admin</h3>
+    <button id="btn-reset-ranking" style="background:#c00;color:#fff">Reset Ranking</button>
+    <div id="admin-msg"></div>
+    </div>
 
     <!-- Login -->
     <div id="login-screen" class="login-screen">
@@ -202,8 +213,8 @@
             <div id="error-msg" class="error"></div>
             <hr>
             <button class="admin-btn" onclick="mostrarRanking()">Ver Ranking</button>
-            <button class="admin-btn" onclick="resetarNumeros()">Reset Ranking</button>
-            <p style="font-size:14px;color:#555;">(Somente administrador pode resetar)</p>
+            <button class="admin-btn" onclick="resetNumeros()">Reset Ranking</button>
+            <p style="font-size:14px;color:#555;">(Só o administrador pode fazer reset)</p>
             <div id="counter"></div>
             <div id="tabela-container"></div>
         </div>
@@ -227,10 +238,10 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js"></script>
-
     <script>
+    
     // --------------------------
-    // 🔥 CONFIGURAÇÃO FIREBASE
+    // FIREBASE CONFIG
     // --------------------------
     const firebaseConfig = {
         apiKey: "AIzaSyDdS_UreonF1FxjkwLabA4VZKu_wCDBJKM",
@@ -246,7 +257,7 @@
     const db = firebase.firestore();
 
     // --------------------------
-    // 🔢 VARIÁVEIS DO QUIZ
+    // VARIÁVEIS DO QUIZ
     // --------------------------
 
     let current = 0, score = 0, time = 20, timerInterval;
@@ -267,7 +278,7 @@
     ];
 
     // --------------------------
-    // 🔥 FUNÇÕES FIRESTORE
+    // FUNÇÕES FIRESTORE
     // --------------------------
 
     // Verifica se o número de funcionário já existe
@@ -276,15 +287,15 @@
         return snap.exists;
     }
 
-    // Registra o funcionário
-    async function registrarFuncionario(nome, numero) {
+    // Regista o funcionário
+    async function registarFuncionario(nome, numero) {
         await db.collection("funcionarios").doc(numero).set({
             nome: nome,
             numero: numero
         });
     }
 
-    // Salva pontuação no ranking global
+    // Salva a pontuação no ranking global
     async function salvarRanking(nome, score) {
         await db.collection("ranking").add({
             nome: nome,
@@ -303,7 +314,7 @@
         return snap.docs.map(doc => doc.data());
     }
 
-    // Reseta tabelas
+    // Reset das tabelas
     async function resetarFirestore() {
         const funcionarios = await db.collection("funcionarios").get();
         funcionarios.forEach(doc => doc.ref.delete());
@@ -313,7 +324,7 @@
     }
 
     // --------------------------
-    // 🟩 FUNÇÕES DO SISTEMA
+    // FUNÇÕES DO SISTEMA
     // --------------------------
 
     async function validarLogin() {
@@ -331,14 +342,14 @@
             return;
         }
 
-        // Verificar duplicado global
+        // Verificar duplicados global
         if (await funcionarioExiste(numero)) {
             errorMsg.textContent = "Este Nº de Funcionário já foi usado!";
             return;
         }
 
-        // Registrar jogador globalmente
-        await registrarFuncionario(nome, numero);
+        // Registar jogador global
+        await registarFuncionario(nome, numero);
         jogador = { nome, numero };
 
         document.getElementById('login-screen').style.display = 'none';
@@ -367,20 +378,20 @@
     }
 
     // Reset global
-    async function resetarNumeros() {
+    async function resetNumeros() {
         const senha = prompt("Senha de administrador:");
         if (senha !== "admin123.") {
             alert("Senha incorreta! Ação não permitida.");
             return;
         }
 
-        await resetarFirestore();
+        await resetFirestore();
         alert("Ranking e funcionários limpos!");
         document.getElementById('tabela-container').innerHTML = "";
     }
 
     // --------------------------
-    // 🟦 QUIZ
+    // QUIZ
     // --------------------------
 
     function startQuiz() {
@@ -450,6 +461,72 @@
         document.getElementById('timer').style.display = "none";
         document.getElementById('next-btn').style.display = "none";
     }
+    
+</script>
+    
+    <!-- ==== ADMIN ==== -->
+    <button id="btn-admin" hidden>Painel Admin</button>
+    <div id="admin-panel" hidden>
+    <h3>Painel Admin</h3>
+    <button id="btn-reset-ranking" style="background:#c00;color:#fff">Reset Ranking</button>
+    <div id="admin-msg"></div>
+    </div>
+
+<script type="module">
+    
+    // ===== Painel do Administrador =====
+    const btnAdmin = document.getElementById('btn-admin');
+    const pnlAdmin = document.getElementById('admin-panel');
+    const btnReset = document.getElementById('btn-reset-ranking');
+    const adminMsg = document.getElementById('admin-msg');
+
+    onAuthStateChanged(auth, async (user) => {
+    if (!user) { btnAdmin.hidden = true; pnlAdmin.hidden = true; return; }
+    const token = await user.getIdTokenResult(true);
+    const isAdmin = !!token.claims.admin;
+    btnAdmin.hidden = !isAdmin;
+    if (!isAdmin) pnlAdmin.hidden = true;
+    });
+
+    btnAdmin?.addEventListener('click', () => pnlAdmin.hidden = !pnlAdmin.hidden);
+
+    btnReset?.addEventListener('click', async () => {
+        adminMsg.textContent = 'A apagar ranking...';
+        try {
+        const snap = await getDocs(collection(db, 'ranking'));
+        const batch = writeBatch(db);
+        snap.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+        adminMsg.textContent = 'Ranking reset done!';
+        } catch (e) {
+        adminMsg.textContent = 'Error: ' + e.message;
+        }
+        });
+
+        // ===== Bloqueios refresh/voltar =====
+        history.pushState({ quiz:true }, document.title, location.href);
+        window.addEventListener('popstate', (ev) => {
+        if (ev.state && ev.state.quiz) {
+        history.pushState(ev.state, document.title, location.href);
+        // Mostra um toast/overlay
+        }
+        });
+
+        function beforeUnloadHandler(e){ e.preventDefault(); e.returnValue=''; }
+        function lockUnload(){ window.addEventListener('beforeunload', beforeUnloadHandler, {capture:true}); }
+        function unlockUnload(){ window.removeEventListener('beforeunload', beforeUnloadHandler, {capture:true}); }
+
+        // Ativa os bloqueios quando o quiz começa e desativa quando terminar:
+        // lockUnload();
+        // ...no fim do quiz: unlockUnload();
+
+        // Bloquear F5 / Ctrl+R / Cmd+R
+        window.addEventListener('keydown', (e) => {
+        const key = e.key;
+        const ctrlOrMeta = e.ctrlKey || e.metaKey;
+        if (key === 'F5' || (ctrlOrMeta && key.toLowerCase() === 'r')) e.preventDefault();
+        }, { capture:true });
+
     </script>
 
 </body>
